@@ -7,6 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
+#include "AP_Mount_Visca.h"
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
@@ -454,6 +455,11 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
         // check for SToRM32 mounts using serial protocol
         } else if (mount_type == Mount_Type_SToRM32_serial) {
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
+            _num_instances++;
+
+        // check for camera mounts using Visca protocol
+        } else if (mount_type == Mount_Type_Visca) {
+            _backends[instance] = new AP_Mount_Visca(*this, state[instance], instance);
             _num_instances++;
         }
 
