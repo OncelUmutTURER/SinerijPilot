@@ -7,7 +7,7 @@
 #include "AP_Mount_Alexmos.h"
 #include "AP_Mount_SToRM32.h"
 #include "AP_Mount_SToRM32_serial.h"
-#include "AP_Mount_Visca.h"
+#include "AP_Mount_Pinling.h"
 
 const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _DEFLT_MODE
@@ -194,7 +194,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:VISCA_Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:PINLING_Serial
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_TYPE", 19, AP_Mount, state[0]._type, 0),
@@ -386,7 +386,7 @@ const AP_Param::GroupInfo AP_Mount::var_info[] = {
     // @Param: 2_TYPE
     // @DisplayName: Mount2 Type
     // @Description: Mount Type (None, Servo or MAVLink)
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:VISCA_Serial
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:PINLING_Serial
     // @User: Standard
     AP_GROUPINFO("2_TYPE",           42, AP_Mount, state[1]._type, 0),
 #endif // AP_MOUNT_MAX_INSTANCES > 1
@@ -457,9 +457,9 @@ void AP_Mount::init(const AP_SerialManager& serial_manager)
             _backends[instance] = new AP_Mount_SToRM32_serial(*this, state[instance], instance);
             _num_instances++;
 
-        // check for camera mounts using VISCA serial protocol
-        } else if (mount_type == Mount_Type_Visca) {
-            _backends[instance] = new AP_Mount_Visca(*this, state[instance], instance);
+        // check for camera mounts using PINLING serial protocol
+        } else if (mount_type == Mount_Type_Pinling) {
+            _backends[instance] = new AP_Mount_Pinling(*this, state[instance], instance);
             _num_instances++;
         }
 

@@ -1,5 +1,5 @@
 /*
-  VISCA controlled mount backend class
+  PINLING SERIAL GIMBAL PROTOCOL controlled mount backend class
 */
 #pragma once
 
@@ -12,24 +12,24 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
 
-#define AP_MOUNT_VISCA_SPEED 30 // degree/s2
+#define AP_MOUNT_PINLING_SPEED 30 // degree/s2
 
-#define AP_MOUNT_VISCA_MODE_NO_CONTROL 0
-#define AP_MOUNT_VISCA_MODE_SPEED 1
-#define AP_MOUNT_VISCA_MODE_ANGLE 2
-#define AP_MOUNT_VISCA_MODE_SPEED_ANGLE 3
-#define AP_MOUNT_VISCA_MODE_RC 4
-#define AP_MOUNT_VISCA_MODE_ANGLE_REL_FRAME 5
+#define AP_MOUNT_PINLING_MODE_NO_CONTROL 0
+#define AP_MOUNT_PINLING_MODE_SPEED 1
+#define AP_MOUNT_PINLING_MODE_ANGLE 2
+#define AP_MOUNT_PINLING_MODE_SPEED_ANGLE 3
+#define AP_MOUNT_PINLING_MODE_RC 4
+#define AP_MOUNT_PINLING_MODE_ANGLE_REL_FRAME 5
 
 #define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
 #define DEGREE_PER_SEC_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.1220740379f)))
 
-class AP_Mount_Visca : public AP_Mount_Backend 
+class AP_Mount_Pinling : public AP_Mount_Backend 
 {
 public:
     //constructor
-    AP_Mount_Visca(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
+    AP_Mount_Pinling(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
         AP_Mount_Backend(frontend, state, instance)
     {}
 
@@ -138,6 +138,23 @@ private:
         uint8_t byte_5=0x00;
     };
 
+    struct PACKED query_attitude_response_body {
+        int16_t imu_angle_roll;
+        int16_t rc_target_angle_roll;
+        int32_t stator_rel_angle_roll;
+        uint8_t reserved_bytes_roll[10];
+
+        int16_t imu_angle_pitch;
+        int16_t rc_target_angle_pitch;
+        int32_t stator_rel_angle_pitch;
+        uint8_t reserved_bytes_pitch[10];
+
+        int16_t imu_angle_yaw;
+        int16_t rc_target_angle_yaw;
+        int32_t stator_rel_angle_yaw;
+        uint8_t reserved_bytes_yaw[10];
+    };
+
     /*
         3e 3d 36 73 { ...body... } cs
         { ...body... } :    ROLL_IMU_ANGLE[2] ROLL_RC_TARGET_ANGLE[2] ROLL_STATOR_REL_ANGLE[4] RES_BYTES[10]
@@ -146,7 +163,7 @@ private:
     */
     struct PACKED query_attitude_response {
         uint8_t header[4]={0x3E,0x3D,0x36,0x73};
-        uint8_t body [2*3+2*3+4*3+10*3];
+        query_attitude_response_body body;
         uint8_t checksum;
     } gimbal_response;
 

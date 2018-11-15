@@ -272,11 +272,11 @@ void AP_SerialManager::init()
                     state[i].uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
                     break;
 
-                case SerialProtocol_Visca:
-                    state[i].baud = AP_SERIALMANAGER_VISCA_BAUD / 1000;   // update baud param in case user looks at it
+                case SerialProtocol_Pinling:
+                    state[i].baud = AP_SERIALMANAGER_PINLING_BAUD / 1000;   // update baud param in case user looks at it
                     state[i].uart->begin(map_baudrate(state[i].baud),
-                                         AP_SERIALMANAGER_VISCA_BUFSIZE_RX,
-                                         AP_SERIALMANAGER_VISCA_BUFSIZE_TX);
+                                         AP_SERIALMANAGER_PINLING_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_PINLING_BUFSIZE_TX);
                     break;
             }
         }
