@@ -125,7 +125,7 @@ private:
         CS      : checksum:checksum is calculated as a sum of all data bytes (from ‘RM’ to ‘YAH’) modulo 256
     */
     struct PACKED cmd_set_attitude {
-        int32_t header=0xFF010F10;
+        uint8_t header[4]={0xFF,0x01,0x0F,0x10};
         set_attitude_body body;
         uint8_t checksum;
     };
@@ -145,7 +145,7 @@ private:
                             YAW_IMU_ANGLE[2] YAW_RC_TARGET_ANGLE[2] YAW_STATOR_REL_ANGLE[4] RES_BYTES[10]
     */
     struct PACKED query_attitude_response {
-        int32_t header=0x3e3d3673;
+        uint8_t header[4]={0x3E,0x3D,0x36,0x73};
         uint8_t body [2*3+2*3+4*3+10*3];
         uint8_t checksum;
     } gimbal_response;

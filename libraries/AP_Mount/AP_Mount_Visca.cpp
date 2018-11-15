@@ -167,7 +167,6 @@ void AP_Mount_Visca::read_incoming() {
 }
 
 void AP_Mount_Visca::parse_reply() {
-    uint16_t crc;
     bool crc_ok;
 
     uint8_t checksum = 0; 

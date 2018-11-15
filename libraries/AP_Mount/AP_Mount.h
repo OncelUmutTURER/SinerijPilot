@@ -72,7 +72,7 @@ public:
         Mount_Type_Alexmos = 3,         /// Alexmos mount
         Mount_Type_SToRM32 = 4,         /// SToRM32 mount using MAVLink protocol
         Mount_Type_SToRM32_serial = 5,  /// SToRM32 mount using custom serial protocol
-        Mount_Type_Visca = 6            /// Zoom camera using Visca protocol
+        Mount_Type_Visca = 6            /// Gimbal + Zoom camera using Visca protocol
     };
 
     // init - detect and initialise all mounts
