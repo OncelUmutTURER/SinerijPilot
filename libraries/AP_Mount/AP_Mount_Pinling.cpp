@@ -25,11 +25,23 @@ void AP_Mount_Pinling::update()
     switch(get_mode()) {
         // move mount to a "retracted" position.  we do not implement a separate servo based retract mechanism
         case MAV_MOUNT_MODE_RETRACT:
+
+            const Vector3f &target = _state._retract_angles.get();
+            _angle_ef_target_rad.x = ToRad(target.x);
+            _angle_ef_target_rad.y = ToRad(target.y);
+            _angle_ef_target_rad.z = ToRad(target.z);
+
             control_axis(_state._retract_angles.get(), true);
             break;
 
         // move mount to a neutral position, typically pointing forward
         case MAV_MOUNT_MODE_NEUTRAL:
+
+            const Vector3f &target = _state._neutral_angles.get();
+            _angle_ef_target_rad.x = ToRad(target.x);
+            _angle_ef_target_rad.y = ToRad(target.y);
+            _angle_ef_target_rad.z = ToRad(target.z);
+            
             control_axis(_state._neutral_angles.get(), true);
             break;
 
@@ -58,6 +70,9 @@ void AP_Mount_Pinling::update()
             // we do not know this mode so do nothing
             break;
     }
+
+    // Gimbal cevap dönmediği için geçici süreliğine deneme amaçlı bu kodu ekliyorum
+    // _current_angle = _angle_ef_target_rad;
 }
 
 // has_pan_control - returns true if this mount can control it's pan (required for multicopters)
@@ -119,7 +134,6 @@ void AP_Mount_Pinling::control_axis(const Vector3f& angle, bool target_in_degree
     cmd.body.angle_yaw = DEGREE_TO_VALUE(target_deg.z);
 
     uint8_t checksum = 0; 
-
     for (uint8_t i = 0;  i != sizeof(set_attitude_body) ; i++) {
         checksum += ((uint8_t *)&cmd.body)[i];
     }
@@ -147,7 +161,7 @@ void AP_Mount_Pinling::read_incoming() {
 
     numc = _port->available();
 
-    if (numc <= 0 ){
+    if (numc < 0 ){
         return;
     }
 
@@ -176,7 +190,7 @@ void AP_Mount_Pinling::parse_reply() {
         return;
     }
 
-    _current_angle.x = gimbal_response.body.imu_angle_roll;
-    _current_angle.y = gimbal_response.body.imu_angle_pitch;
-    _current_angle.z = gimbal_response.body.imu_angle_yaw;
+    _current_angle.x = VALUE_TO_DEGREE(gimbal_response.body.imu_angle_roll);
+    _current_angle.y = VALUE_TO_DEGREE(gimbal_response.body.imu_angle_pitch);
+    _current_angle.z = VALUE_TO_DEGREE(gimbal_response.body.imu_angle_yaw);
 }
