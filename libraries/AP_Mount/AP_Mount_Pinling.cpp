@@ -113,7 +113,7 @@ void AP_Mount_Pinling::update()
 bool AP_Mount_Pinling::can_send(bool with_control) {
     uint16_t required_tx = 1;
     if (with_control) {
-        required_tx += sizeof(AP_Mount_Pinling::set_attitude_body);
+        required_tx += sizeof(AP_Mount_Pinling::cmd_set_attitude);
     }
     return (_reply_type == ReplyType_NOREPLY) && (_port->txspace() >= required_tx);
 }
@@ -171,7 +171,7 @@ void AP_Mount_Pinling::get_angles()
     _reply_length = get_reply_size(_reply_type);
 
     cmd_query_attitude cmd;
-    write_command_to_gimbal((uint8_t *)&cmd, sizeof(cmd_query_attitude)); 
+    write_command_to_gimbal((uint8_t *)&cmd, sizeof(cmd_query_attitude), false); 
 }
 
 /*
