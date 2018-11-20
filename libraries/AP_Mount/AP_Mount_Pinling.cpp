@@ -196,11 +196,6 @@ void AP_Mount_Pinling::control_axis(const Vector3f& angle, bool target_in_degree
 
     cmd_set_attitude cmd;
 
-    cmd.header[0] = 0x3E;
-    cmd.header[1] = 0x3D;
-    cmd.header[2] = 0x36;
-    cmd.header[3] = 0x73;
-
     cmd.body.mode_roll = AP_MOUNT_PINLING_MODE_ANGLE;
     cmd.body.mode_pitch = AP_MOUNT_PINLING_MODE_ANGLE;
     cmd.body.mode_yaw = AP_MOUNT_PINLING_MODE_ANGLE;
@@ -278,15 +273,25 @@ void AP_Mount_Pinling::parse_reply() {
     switch (_reply_type) {
         case ReplyType_AngleDATA:
 
+            // check if header matches
+            uint8_t expected_header[] = {0x3E,0x3D,0x36,0x73};
+            for (uint8_t i = 0;  i != sizeof(_buffer.data.header) ; i++) {
+                if(expected_header[i] != ((uint8_t *)&_buffer.data.body)[i])
+                {
+                    return;
+                }
+            }
+
+            // check if checksum is correct
             for (uint8_t i = 0;  i != sizeof(_buffer.data.body) ; i++) {
                 checksum += ((uint8_t *)&_buffer.data.body)[i];
-            }
-            
+            }            
             crc_ok = checksum == _buffer.data.checksum;
             if (!crc_ok) {
                 return;
             }
 
+            // update current angles
             _current_angle.x = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_roll);
             _current_angle.y = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_pitch);
             _current_angle.z = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_yaw);
