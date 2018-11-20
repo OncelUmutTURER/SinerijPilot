@@ -3,15 +3,19 @@
 */
 #pragma once
 
-#include "AP_Mount.h"
-#include <AP_HAL/AP_HAL.h>
 #include "AP_Mount_Backend.h"
 
-#include <AP_Param/AP_Param.h>
-#include <AP_Math/AP_Math.h>
-#include <AP_GPS/AP_GPS.h>
-#include <AP_AHRS/AP_AHRS.h>
+// #include <AP_HAL/AP_HAL.h>
+// #include "AP_Mount.h"
+// #include <AP_Common/AP_Common.h>
+// #include <AP_Param/AP_Param.h>
+// #include <AP_Math/AP_Math.h>
+// #include <AP_GPS/AP_GPS.h>
+// #include <AP_AHRS/AP_AHRS.h>
+// #include <GCS_MAVLink/GCS_MAVLink.h>
+// #include <RC_Channel/RC_Channel.h>
 
+#define AP_MOUNT_PINLING_RESEND_MS   1000    // resend angle targets to gimbal once per second
 #define AP_MOUNT_PINLING_SPEED 30 // degree/s2
 
 #define AP_MOUNT_PINLING_MODE_NO_CONTROL 0
@@ -27,11 +31,10 @@
 
 class AP_Mount_Pinling : public AP_Mount_Backend 
 {
+
 public:
     //constructor
-    AP_Mount_Pinling(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance):
-        AP_Mount_Backend(frontend, state, instance)
-    {}
+    AP_Mount_Pinling(AP_Mount &frontend, AP_Mount::mount_state &state, uint8_t instance);
 
     // init - performs any required initialisation for this instance
     virtual void init(const AP_SerialManager& serial_manager);
@@ -60,43 +63,18 @@ private:
     void read_incoming();
     void parse_reply();
 
+    enum ReplyType {
+        ReplyType_NOREPLY = 0,
+        ReplyType_AngleDATA,
+        ReplyType_camControlACK
+    };
+
     // send_command - send any command via serial
-    void send_command(uint8_t* data, uint8_t size);
+    void write_command_to_gimbal(uint8_t* data, uint8_t size, bool updateLastSend=false);
 
-    // struct PACKED cmd_set_address {
-    //     uint8_t byte_1=0x88;
-    //     uint8_t byte_2=0x30;
-    //     uint8_t byte_3=0x01;
-    //     uint8_t byte_4=0xFF;
-    // };
-
-    struct PACKED cmd_set_zoom_in {       
-        uint8_t byte_1=0xFF;
-        uint8_t byte_2=0x01;
-        uint8_t byte_3=0x20;
-        uint8_t byte_4=0x00;
-        uint8_t byte_5=0x00;
-        uint8_t byte_6=0x21;
-
-    };
-
-    struct PACKED cmd_set_zoom_out {
-        uint8_t byte_1=0xFF;
-        uint8_t byte_2=0x01;
-        uint8_t byte_3=0x40;
-        uint8_t byte_4=0x00;
-        uint8_t byte_5=0x00;
-        uint8_t byte_6=0x41;
-    };
-
-    struct PACKED cmd_set_zoom_stop {
-        uint8_t byte_1=0xFF;
-        uint8_t byte_2=0x01;
-        uint8_t byte_3=0x00;
-        uint8_t byte_4=0x00;
-        uint8_t byte_5=0x00;
-        uint8_t byte_6=0x01;
-    };
+    //void add_next_reply(ReplyType reply_type);
+    uint8_t get_reply_size(ReplyType reply_type);
+    bool can_send(bool with_control);
 
     struct PACKED set_attitude_body {
         uint8_t mode_roll;
@@ -161,18 +139,31 @@ private:
                             PITCH_IMU_ANGLE[2] PITCH_RC_TARGET_ANGLE[2] PITCH_STATOR_REL_ANGLE[4] RES_BYTES[10]
                             YAW_IMU_ANGLE[2] YAW_RC_TARGET_ANGLE[2] YAW_STATOR_REL_ANGLE[4] RES_BYTES[10]
     */
-    struct PACKED query_attitude_response {
-        uint8_t header[4]={0x3E,0x3D,0x36,0x73};
+    struct PACKED Pinling_reply_data_struct {
+        uint8_t header[4];//={0x3E,0x3D,0x36,0x73};
         query_attitude_response_body body;
         uint8_t checksum;
-    } gimbal_response;
+    };
 
+    struct PACKED Pinling_camera_reply_ack_struct {
+        uint8_t feedback[8];
+    };
+
+    union PACKED Pinling_reply {
+        DEFINE_BYTE_ARRAY_METHODS
+        Pinling_reply_data_struct data;
+        Pinling_camera_reply_ack_struct ack;
+    } _buffer;
+    
     // internal variables
     AP_HAL::UARTDriver *_port;
 
-    bool _initialised : 1;
+    bool _initialised : 1;          // true once the driver has been initialised
+    uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
 
+    uint8_t _reply_length;
     uint8_t _reply_counter;
+    ReplyType _reply_type;
 
     // keep the last _current_angle values
     Vector3f _current_angle;
