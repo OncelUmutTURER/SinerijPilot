@@ -41,8 +41,6 @@ void AP_Mount_Pinling::update()
             _angle_ef_target_rad.y = ToRad(target.y);
             _angle_ef_target_rad.z = ToRad(target.z);
             }
-            // Storm32_serial.cpp benzeri kodda bu işlem en altta yapılıyor
-            // control_axis(_state._retract_angles.get(), true);
             break;
 
         // move mount to a neutral position, typically pointing forward
@@ -53,39 +51,24 @@ void AP_Mount_Pinling::update()
             _angle_ef_target_rad.y = ToRad(target.y);
             _angle_ef_target_rad.z = ToRad(target.z);
             }
-            // Storm32_serial.cpp benzeri kodda bu işlem en altta yapılıyor
-            // control_axis(_state._neutral_angles.get(), true);
             break;
 
         // point to the angles given by a mavlink message
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
             // do nothing because earth-frame angle targets (i.e. _angle_ef_target_rad) should have already been set by a MOUNT_CONTROL message from GCS
-            // Storm32_serial.cpp benzeri kodda bu işlem en altta yapılıyor
-            // control_axis(_angle_ef_target_rad, false);
             break;
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
             // update targets using pilot's rc inputs
             update_targets_from_rc();
-            // Storm32_serial.cpp benzeri kodda bu işlem en altta yapılıyor
-            // control_axis(_angle_ef_target_rad, false);
             resend_now = true;
             break;
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
             if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true, true);
-                // Storm32_serial.cpp benzeri kodda bu işlem en altta yapılıyor
-                // control_axis(_angle_ef_target_rad, false);
-
-                Vector3f target_angle = _angle_ef_target_rad * RAD_TO_DEG;
-                // Eğer derece cinsinden hedef açısı ile şu anki gimbal açısı arasında herhangi bir yönde 0.1 dereceden fazla fark varsa gimbale hedef açıyı gönderiyoruz
-                if(!(abs(_current_angle.x - target_angle.x) < 0.1 && abs(_current_angle.y - target_angle.y) < 0.1 && abs(_current_angle.z - target_angle.z) < 0.1))
-                {
-                    resend_now = true;
-                }                                
+                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true, true);                            
             }
             break;
 
@@ -93,6 +76,13 @@ void AP_Mount_Pinling::update()
             // we do not know this mode so do nothing
             break;
     }
+
+    Vector3f target_angle = _angle_ef_target_rad * RAD_TO_DEG;
+    // Eğer derece cinsinden hedef açısı ile şu anki gimbal açısı arasında herhangi bir yönde 0.1 dereceden fazla fark varsa gimbale hedef açıyı gönderiyoruz
+    if(!(abs(_current_angle.x - target_angle.x) < degree_threshold && abs(_current_angle.y - target_angle.y) < degree_threshold && abs(_current_angle.z - target_angle.z) < degree_threshold))
+    {
+        resend_now = true;
+    }  
 
     // resend target angles at least once per second
     if((AP_HAL::millis() - _last_send) > AP_MOUNT_PINLING_RESEND_MS)
@@ -196,9 +186,9 @@ void AP_Mount_Pinling::control_axis(const Vector3f& angle, bool target_in_degree
 
     cmd_set_attitude cmd;
 
-    cmd.body.mode_roll = AP_MOUNT_PINLING_MODE_ANGLE;
-    cmd.body.mode_pitch = AP_MOUNT_PINLING_MODE_ANGLE;
-    cmd.body.mode_yaw = AP_MOUNT_PINLING_MODE_ANGLE;
+    cmd.body.mode_roll = AP_MOUNT_PINLING_MODE_DEFAULT;
+    cmd.body.mode_pitch = AP_MOUNT_PINLING_MODE_DEFAULT;
+    cmd.body.mode_yaw = AP_MOUNT_PINLING_MODE_DEFAULT;
 
     cmd.body.speed_roll = DEGREE_PER_SEC_TO_VALUE(AP_MOUNT_PINLING_SPEED);
     cmd.body.angle_roll = DEGREE_TO_VALUE(target_deg.x);

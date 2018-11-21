@@ -15,8 +15,8 @@
 // #include <GCS_MAVLink/GCS_MAVLink.h>
 // #include <RC_Channel/RC_Channel.h>
 
-#define AP_MOUNT_PINLING_RESEND_MS   1000    // resend angle targets to gimbal once per second
-#define AP_MOUNT_PINLING_SPEED 30 // degree/s2
+#define AP_MOUNT_PINLING_RESEND_MS   1000   // resend angle targets to gimbal once per second
+#define AP_MOUNT_PINLING_SPEED 0            // degree/s2 //0: default gimbal speed
 
 #define AP_MOUNT_PINLING_MODE_NO_CONTROL 0
 #define AP_MOUNT_PINLING_MODE_SPEED 1
@@ -24,6 +24,7 @@
 #define AP_MOUNT_PINLING_MODE_SPEED_ANGLE 3
 #define AP_MOUNT_PINLING_MODE_RC 4
 #define AP_MOUNT_PINLING_MODE_ANGLE_REL_FRAME 5
+#define AP_MOUNT_PINLING_MODE_DEFAULT 5
 
 #define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
@@ -157,6 +158,8 @@ private:
     
     // internal variables
     AP_HAL::UARTDriver *_port;
+
+    uint32_t degree_threshold = 1;   //derece cinsinden hedef nokta ile baktığı nokta arasında bu dereceden az fark varsa komut göndermez
 
     bool _initialised : 1;          // true once the driver has been initialised
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
