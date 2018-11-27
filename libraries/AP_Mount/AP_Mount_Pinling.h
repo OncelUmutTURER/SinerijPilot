@@ -15,6 +15,8 @@
 // #include <GCS_MAVLink/GCS_MAVLink.h>
 // #include <RC_Channel/RC_Channel.h>
 
+// #define AP_MOUNT_PINLING_DEGREE_THRESHOLD 1 // derece cinsinden hedef nokta ile baktığı nokta arasında bu dereceden az fark varsa komut göndermez
+
 #define AP_MOUNT_PINLING_RESEND_MS   1000   // resend angle targets to gimbal once per second
 #define AP_MOUNT_PINLING_SPEED 0            // degree/s2 //0: default gimbal speed
 
@@ -24,7 +26,7 @@
 #define AP_MOUNT_PINLING_MODE_SPEED_ANGLE 3
 #define AP_MOUNT_PINLING_MODE_RC 4
 #define AP_MOUNT_PINLING_MODE_ANGLE_REL_FRAME 5
-#define AP_MOUNT_PINLING_MODE_DEFAULT 5
+#define AP_MOUNT_PINLING_MODE_DEFAULT 2
 
 #define VALUE_TO_DEGREE(d) ((float)((d * 720) >> 15))
 #define DEGREE_TO_VALUE(d) ((int16_t)((float)(d)*(1.0f/0.02197265625f)))
@@ -54,6 +56,8 @@ public:
 
 private:
 
+    void calculate_angle_ef_target();
+
     // get_angles
     void get_angles();
 
@@ -61,7 +65,7 @@ private:
     void control_axis(const Vector3f& angle , bool targets_in_degrees);
 
     // read_incoming - detect and read the header of the incoming message from the gimbal
-    void read_incoming();
+    void read_incoming(bool resetCounter = false);
     void parse_reply();
 
     enum ReplyType {
@@ -75,7 +79,7 @@ private:
 
     //void add_next_reply(ReplyType reply_type);
     uint8_t get_reply_size(ReplyType reply_type);
-    bool can_send(bool with_control);
+    bool can_send();
 
     struct PACKED set_attitude_body {
         uint8_t mode_roll;
@@ -159,16 +163,22 @@ private:
     // internal variables
     AP_HAL::UARTDriver *_port;
 
-    uint32_t degree_threshold = 1;   //derece cinsinden hedef nokta ile baktığı nokta arasında bu dereceden az fark varsa komut göndermez
-
     bool _initialised : 1;          // true once the driver has been initialised
     uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
+    bool resend_now = false;        // resend target angles to mount
 
     uint8_t _reply_length;
     uint8_t _reply_counter;
     ReplyType _reply_type;
 
+    const bool isSendDebug = true;
+    const bool isGetDebug = true;
+    const char debug_prefix[5] = {'D','B','G',':',' '};
+    const float AP_MOUNT_PINLING_DEGREE_THRESHOLD = 1; // derece cinsinden hedef nokta ile baktığı nokta arasında bu dereceden az fark varsa komut göndermez
+
     // keep the last _current_angle values
-    Vector3f _current_angle;
+    Vector3f _current_imu_angle;
+    Vector3f _current_rc_target_angle;
+    Vector3f _current_stator_rel_angle;
 };
 
