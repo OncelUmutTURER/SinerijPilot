@@ -177,8 +177,8 @@ private:
     const float AP_MOUNT_PINLING_DEGREE_THRESHOLD = 1; // derece cinsinden hedef nokta ile baktığı nokta arasında bu dereceden az fark varsa komut göndermez
 
     // keep the last _current_angle values
-    Vector3f _current_imu_angle;
-    Vector3f _current_rc_target_angle;
-    Vector3f _current_stator_rel_angle;
+    Vector3f _current_imu_angle_deg;
+    Vector3f _current_rc_target_angle_deg;
+    Vector3f _current_stator_rel_angle_deg;
 };
 

@@ -27,7 +27,7 @@ void AP_Mount_Pinling::init(const AP_SerialManager& serial_manager)
 void AP_Mount_Pinling::update()
 {   
     // if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "update__________\n\n");}
-    // gcs().send_text(MAV_SEVERITY_INFO, "update__________");
+    
     // exit immediately if not initialised
     if (!_initialised) {
         return;
@@ -45,10 +45,12 @@ void AP_Mount_Pinling::update()
     // if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "_angle_ef_target_deg | x:%.3f, y:%.3f, z:%.3f\n", target_angle.x, target_angle.y, target_angle.z);}
 
     // Eğer derece cinsinden hedef açısı ile şu anki gimbal açısı arasında herhangi bir yönde degree_threshold dereceden fazla fark varsa gimbale hedef açıyı gönderiyoruz
-    if(!(abs(_current_stator_rel_angle.x - target_angle.x) < AP_MOUNT_PINLING_DEGREE_THRESHOLD && abs(_current_stator_rel_angle.y - target_angle.y) < AP_MOUNT_PINLING_DEGREE_THRESHOLD && abs(_current_stator_rel_angle.z - target_angle.z) < AP_MOUNT_PINLING_DEGREE_THRESHOLD))
+    if(!(   abs(_current_imu_angle_deg.x - target_angle.x) < AP_MOUNT_PINLING_DEGREE_THRESHOLD && 
+            abs(_current_imu_angle_deg.y - target_angle.y) < AP_MOUNT_PINLING_DEGREE_THRESHOLD && 
+            abs(_current_stator_rel_angle_deg.z - target_angle.z) < AP_MOUNT_PINLING_DEGREE_THRESHOLD       ))
     {
         if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "degree_threshold'dan fazla fark oldu\n");}
-        if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "_current_stator_rel_angle | r:%.3f, p:%.3f, y:%.3f\n", _current_stator_rel_angle.x, _current_stator_rel_angle.y, _current_stator_rel_angle.z);}
+        if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "_current_stator_rel_angle_deg | r:%.3f, p:%.3f, y:%.3f\n", _current_stator_rel_angle_deg.x, _current_stator_rel_angle_deg.y, _current_stator_rel_angle_deg.z);}
         if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "target_angle | r:%.3f, p:%.3f, y:%.3f\n", target_angle.x, target_angle.y, target_angle.z);}
         
         resend_now = true;
@@ -64,14 +66,14 @@ void AP_Mount_Pinling::update()
 
     if (resend_now && can_send()) {
         // correcting mount initial position
-        Vector3f corrected_target_angle_deg;
-        // corrected_target_angle_deg.x = (_angle_ef_target_rad * RAD_TO_DEG).x - _current_stator_rel_angle.x;
-        // corrected_target_angle_deg.y = (_angle_ef_target_rad * RAD_TO_DEG).y - _current_stator_rel_angle.y;
-        corrected_target_angle_deg.z = (_angle_ef_target_rad * RAD_TO_DEG).z - _current_stator_rel_angle.z;
+        Vector3f yaw_corrected_target_angle_deg = _angle_ef_target_rad * RAD_TO_DEG;
+        // corrected_target_angle_deg.x = (_angle_ef_target_rad * RAD_TO_DEG).x + (_current_imu_angle_deg.x - _current_stator_rel_angle_deg.x);
+        // corrected_target_angle_deg.y = (_angle_ef_target_rad * RAD_TO_DEG).y + (_current_imu_angle_deg.y - _current_stator_rel_angle_deg.y);
+        yaw_corrected_target_angle_deg.z = (_angle_ef_target_rad * RAD_TO_DEG).z + (_current_imu_angle_deg.z - _current_stator_rel_angle_deg.z);
 
         // Vector3f corrected_target_angle_deg = corrected_target_angle_rad * RAD_TO_DEG;
         // if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "corrected_target_angle_rad | r:%.3f, p:%.3f, y:%.3f\n", corrected_target_angle_deg.x, corrected_target_angle_deg.y, corrected_target_angle_deg.z);}
-        control_axis(corrected_target_angle_deg * DEG_TO_RAD, false);
+        control_axis(yaw_corrected_target_angle_deg * DEG_TO_RAD, false);
     }
 }
 
@@ -125,7 +127,7 @@ void AP_Mount_Pinling::calculate_angle_ef_target(){
 }
 
 bool AP_Mount_Pinling::can_send() {
-    return (_reply_type == ReplyType_NOREPLY) && (_port->txspace() >= sizeof(AP_Mount_Pinling::cmd_set_attitude));
+    return _reply_type == ReplyType_NOREPLY && _port->txspace() >= sizeof(AP_Mount_Pinling::cmd_set_attitude);
 }
 
 uint8_t AP_Mount_Pinling::get_reply_size(ReplyType reply_type) {
@@ -168,8 +170,8 @@ void AP_Mount_Pinling::status_msg(mavlink_channel_t chan)
     // return target angles as gimbal's actual attitude.
     get_angles();
 
-    // if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "Sending current angle (_current_stator_rel_angle) to GCS: x:%.3f, y:%.3f, z:%.3f\n", _current_stator_rel_angle.x*100, _current_stator_rel_angle.y*100, _current_stator_rel_angle.z*100);}
-    mavlink_msg_mount_status_send(chan, 0, 0, _current_stator_rel_angle.y*100, _current_stator_rel_angle.x*100, _current_stator_rel_angle.z*100);
+    // if(isSendDebug) {gcs().send_text(MAV_SEVERITY_INFO, "Sending current angle (_current_stator_rel_angle_deg) to GCS: x:%.3f, y:%.3f, z:%.3f\n", _current_stator_rel_angle_deg.x*100, _current_stator_rel_angle_deg.y*100, _current_stator_rel_angle_deg.z*100);}
+    mavlink_msg_mount_status_send(chan, 0, 0, _current_stator_rel_angle_deg.y*100, _current_stator_rel_angle_deg.x*100, _current_stator_rel_angle_deg.z*100);
 }
 
 // get_angles
@@ -331,20 +333,20 @@ void AP_Mount_Pinling::parse_reply() {
                 return;
             }
 
-            _current_imu_angle.x = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_roll);
-            _current_imu_angle.y = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_pitch);
-            _current_imu_angle.z = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_yaw);
-            if(isGetDebug) {gcs().send_text(MAV_SEVERITY_INFO, "imu_angle_rpy | x:%.3f, y:%.3f, z:%.3f\n", _current_imu_angle.x, _current_imu_angle.y, _current_imu_angle.z);}
+            _current_imu_angle_deg.x = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_roll);
+            _current_imu_angle_deg.y = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_pitch);
+            _current_imu_angle_deg.z = VALUE_TO_DEGREE(_buffer.data.body.imu_angle_yaw);
+            if(isGetDebug) {gcs().send_text(MAV_SEVERITY_INFO, "imu_angle_rpy | r:%.3f, p:%.3f, y:%.3f\n", _current_imu_angle_deg.x, _current_imu_angle_deg.y, _current_imu_angle_deg.z);}
 
-            _current_rc_target_angle.x = VALUE_TO_DEGREE(_buffer.data.body.rc_target_angle_roll);
-            _current_rc_target_angle.y = VALUE_TO_DEGREE(_buffer.data.body.rc_target_angle_pitch);
-            _current_rc_target_angle.z = VALUE_TO_DEGREE(_buffer.data.body.rc_target_angle_yaw);
-            if(isGetDebug) {gcs().send_text(MAV_SEVERITY_INFO, "rc_target_angle_rpy | x:%.3f, y:%.3f, z:%.3f\n", _current_rc_target_angle.x, _current_rc_target_angle.y, _current_rc_target_angle.z);}
+            _current_rc_target_angle_deg.x = VALUE_TO_DEGREE(_buffer.data.body.rc_target_angle_roll);
+            _current_rc_target_angle_deg.y = VALUE_TO_DEGREE(_buffer.data.body.rc_target_angle_pitch);
+            _current_rc_target_angle_deg.z = VALUE_TO_DEGREE(_buffer.data.body.rc_target_angle_yaw);
+            if(isGetDebug) {gcs().send_text(MAV_SEVERITY_INFO, "rc_target_angle_rpy | r:%.3f, p:%.3f, y:%.3f\n", _current_rc_target_angle_deg.x, _current_rc_target_angle_deg.y, _current_rc_target_angle_deg.z);}
 
-            _current_stator_rel_angle.x = VALUE_TO_DEGREE(_buffer.data.body.stator_rel_angle_roll);
-            _current_stator_rel_angle.y = VALUE_TO_DEGREE(_buffer.data.body.stator_rel_angle_pitch);
-            _current_stator_rel_angle.z = VALUE_TO_DEGREE(_buffer.data.body.stator_rel_angle_yaw);
-            if(isGetDebug) {gcs().send_text(MAV_SEVERITY_INFO, "stator_rel_angle_rpy | x:%.3f, y:%.3f, z:%.3f\n", _current_stator_rel_angle.x, _current_stator_rel_angle.y, _current_stator_rel_angle.z);}
+            _current_stator_rel_angle_deg.x = VALUE_TO_DEGREE(_buffer.data.body.stator_rel_angle_roll);
+            _current_stator_rel_angle_deg.y = VALUE_TO_DEGREE(_buffer.data.body.stator_rel_angle_pitch);
+            _current_stator_rel_angle_deg.z = VALUE_TO_DEGREE(_buffer.data.body.stator_rel_angle_yaw);
+            if(isGetDebug) {gcs().send_text(MAV_SEVERITY_INFO, "stator_rel_angle_rpy | r:%.3f, p:%.3f, y:%.3f\n", _current_stator_rel_angle_deg.x, _current_stator_rel_angle_deg.y, _current_stator_rel_angle_deg.z);}
                         
         //     break;
         // default:
