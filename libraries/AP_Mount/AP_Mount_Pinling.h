@@ -5,18 +5,6 @@
 
 #include "AP_Mount_Backend.h"
 
-// #include <AP_HAL/AP_HAL.h>
-// #include "AP_Mount.h"
-// #include <AP_Common/AP_Common.h>
-// #include <AP_Param/AP_Param.h>
-// #include <AP_Math/AP_Math.h>
-// #include <AP_GPS/AP_GPS.h>
-// #include <AP_AHRS/AP_AHRS.h>
-// #include <GCS_MAVLink/GCS_MAVLink.h>
-// #include <RC_Channel/RC_Channel.h>
-
-// #define AP_MOUNT_PINLING_DEGREE_THRESHOLD 1 // derece cinsinden hedef nokta ile baktığı nokta arasında bu dereceden az fark varsa komut göndermez
-
 #define AP_MOUNT_PINLING_RESEND_MS   1000   // resend angle targets to gimbal once per second
 #define AP_MOUNT_PINLING_SPEED 0            // degree/s2 //0: default gimbal speed
 
@@ -105,7 +93,7 @@ private:
         SL SH   : speed (units: 0.1220740379 degree/sec)
         AL AH   : angle (units: 0.02197265625 degree)
 
-        CS      : checksum:checksum is calculated as a sum of all data bytes (from ‘RM’ to ‘YAH’) modulo 256
+        CS      : checksum: checksum is calculated as a sum of all data bytes (from ‘RM’ to ‘YAH’) modulo 256
     */
     struct PACKED cmd_set_attitude {
         uint8_t header[4]={0xFF,0x01,0x0F,0x10};
@@ -171,8 +159,8 @@ private:
     uint8_t _reply_counter;
     ReplyType _reply_type;
 
-    const bool isSendDebug = true;
-    const bool isGetDebug = true;
+    // const bool isSendDebug = false;
+    // const bool isGetDebug = false;
     const char debug_prefix[5] = {'D','B','G',':',' '};
     const float AP_MOUNT_PINLING_DEGREE_THRESHOLD = 1; // derece cinsinden hedef nokta ile baktığı nokta arasında bu dereceden az fark varsa komut göndermez
 
