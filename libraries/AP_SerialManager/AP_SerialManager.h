@@ -78,6 +78,11 @@
 #define AP_SERIALMANAGER_PINLING_BUFSIZE_RX       128
 #define AP_SERIALMANAGER_PINLING_BUFSIZE_TX       128
 
+// Lapis serial gimbal protocol default baud rates and buffer sizes  
+#define AP_SERIALMANAGER_LAPIS_BAUD             115200
+#define AP_SERIALMANAGER_LAPIS_BUFSIZE_RX       128
+#define AP_SERIALMANAGER_LAPIS_BUFSIZE_TX       128
+
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -107,6 +112,7 @@ public:
         SerialProtocol_ESCTelemetry = 16,
         SerialProtocol_Devo_Telem = 17,
         SerialProtocol_Pinling = 18,
+        SerialProtocol_Lapis = 19
     };
 
     // get singleton instance

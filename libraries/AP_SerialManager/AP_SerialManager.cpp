@@ -278,6 +278,13 @@ void AP_SerialManager::init()
                                          AP_SERIALMANAGER_PINLING_BUFSIZE_RX,
                                          AP_SERIALMANAGER_PINLING_BUFSIZE_TX);
                     break;
+                
+                case SerialProtocol_Lapis:
+                    state[i].baud = AP_SERIALMANAGER_LAPIS_BAUD / 1000;   // update baud param in case user looks at it
+                    state[i].uart->begin(map_baudrate(state[i].baud),
+                                         AP_SERIALMANAGER_LAPIS_BUFSIZE_RX,
+                                         AP_SERIALMANAGER_LAPIS_BUFSIZE_TX);
+                    break;
             }
         }
     }
