@@ -1,5 +1,5 @@
 #include "AP_Mount_Lapis.h"
-#include "location.h"
+// #include "location.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -80,8 +80,9 @@ uint8_t AP_Mount_Lapis::calculate_angle_ef_target(){
                 _angle_ef_target_rad.x = ToRad(target.x);
                 _angle_ef_target_rad.y = ToRad(target.y);
                 _angle_ef_target_rad.z = ToRad(target.z);
-            }
-            _command_id = CMD_TO_GIMBAL_ANGLE;
+
+                _command_id = CMD_TO_GIMBAL_ANGLE;
+            }            
             break;
 
         // move mount to a neutral position, typically pointing forward
@@ -91,8 +92,9 @@ uint8_t AP_Mount_Lapis::calculate_angle_ef_target(){
                 _angle_ef_target_rad.x = ToRad(target.x);
                 _angle_ef_target_rad.y = ToRad(target.y);
                 _angle_ef_target_rad.z = ToRad(target.z);
-            }
-            _command_id = CMD_TO_GIMBAL_ANGLE;
+
+                _command_id = CMD_TO_GIMBAL_ANGLE;
+            }            
             break;
 
         // point to the angles given by a mavlink message
@@ -103,9 +105,13 @@ uint8_t AP_Mount_Lapis::calculate_angle_ef_target(){
 
         // RC radio manual angle control, but with stabilization from the AHRS
         case MAV_MOUNT_MODE_RC_TARGETING:
-            // update targets using pilot's rc inputs
-            update_targets_from_rc();
-            _command_id = CMD_TO_GIMBAL_ANGLE;
+            {
+                // update targets using pilot's rc inputs
+                update_targets_from_rc();
+                send_uav_info_now = true;
+
+                _command_id = CMD_TO_GIMBAL_ANGLE;                
+            }
             break;
 
         // point mount to a GPS point given by the mission planner
@@ -151,34 +157,40 @@ void AP_Mount_Lapis::update()
 
     // flag to trigger sending target angles to gimbal
     send_uav_info_now = false;
+
+
+    collect_uav_info();
+    uint8_t _command_id = calculate_angle_ef_target();
+
     // send target angles at least once per second
     if((AP_HAL::millis() - _last_send) > AP_MOUNT_LAPIS_RESEND_MS)
     {
         send_uav_info_now = true;
     }
 
-    if (send_uav_info_now && can_send_command()) {
-        collect_uav_info();
-
-        uint8_t _command_id = calculate_angle_ef_target();
+    if (send_uav_info_now && can_send_command()) {        
         switch (_command_id)
         {
             case CMD_TO_GIMBAL_ANGLE:
-                lapis_angle_control cmd_ang;
-                cmd_ang.command_type = 0;
+                {
+                    lapis_angle_control cmd_ang;
+                    cmd_ang.command_type = 0;
 
-                Vector3f target_deg = _angle_ef_target_rad * RAD_TO_DEG;
-                cmd_ang.angle_yaw.f = target_deg.z;
-                cmd_ang.angle_pitch.f = target_deg.y;
-                cmd_ang.angle_roll.f = target_deg.x;
+                    Vector3f target_deg = _angle_ef_target_rad * RAD_TO_DEG;
+                    cmd_ang.angle_yaw.f = target_deg.z;
+                    cmd_ang.angle_pitch.f = target_deg.y;
+                    cmd_ang.angle_roll.f = target_deg.x;
 
-                cmd_ang.command_type |= 1<<0; //pozisyon modu
+                    cmd_ang.command_type |= 1<<0; //pozisyon modu
 
-                gimbal_command.angle = cmd_ang;
+                    gimbal_command.angle = cmd_ang;
+                }
                 break;
 
             case CMD_TO_GIMBAL_UAV_INFO:
-                gimbal_command.uav_info = _current_uav_info;
+                {
+                    gimbal_command.uav_info = _current_uav_info;
+                }
                 break;
 
             default:
@@ -219,27 +231,35 @@ void AP_Mount_Lapis::send_command(uint8_t cmd)
     uint8_t* payload;
     switch (cmd) {
         case CMD_TO_GIMBAL_POWER:
-            cmd_prm._command_id = CMD_TO_GIMBAL_POWER;
-            cmd_prm._payload_length = sizeof(lapis_power_control);
-            payload = (uint8_t *)&gimbal_command.power;
+            {
+                cmd_prm._command_id = CMD_TO_GIMBAL_POWER;
+                cmd_prm._payload_length = sizeof(lapis_power_control);
+                payload = (uint8_t *)&gimbal_command.power;
+            }
             break;
 
         case CMD_TO_GIMBAL_ANGLE:
-            cmd_prm._command_id = CMD_TO_GIMBAL_ANGLE;
-            cmd_prm._payload_length = sizeof(lapis_angle_control);
-            payload = (uint8_t *)&gimbal_command.angle;
+            {
+                cmd_prm._command_id = CMD_TO_GIMBAL_ANGLE;
+                cmd_prm._payload_length = sizeof(lapis_angle_control);
+                payload = (uint8_t *)&gimbal_command.angle;
+            }
             break;
 
         case CMD_TO_GIMBAL_GEOLOCK_AND_TRIM:
-            cmd_prm._command_id = CMD_TO_GIMBAL_GEOLOCK_AND_TRIM;
-            cmd_prm._payload_length = sizeof(lapis_geolock_trim_control);
-            payload = (uint8_t *)&gimbal_command.geotrim;
+            {
+                cmd_prm._command_id = CMD_TO_GIMBAL_GEOLOCK_AND_TRIM;
+                cmd_prm._payload_length = sizeof(lapis_geolock_trim_control);
+                payload = (uint8_t *)&gimbal_command.geotrim;
+            }
             break;
         
         case CMD_TO_GIMBAL_UAV_INFO:
-            cmd_prm._command_id = CMD_TO_GIMBAL_UAV_INFO;
-            cmd_prm._payload_length = sizeof(lapis_uav_info);
-            payload = (uint8_t *)&gimbal_command.uav_info;
+            {
+                cmd_prm._command_id = CMD_TO_GIMBAL_UAV_INFO;
+                cmd_prm._payload_length = sizeof(lapis_uav_info);
+                payload = (uint8_t *)&gimbal_command.uav_info;
+            }
             break;
 
         default :
@@ -261,6 +281,9 @@ void AP_Mount_Lapis::send_command(uint8_t cmd)
     }
     cmd_prm._body_checksum = get_2s_compliment(cmd_prm._body_checksum);
     _port->write(cmd_prm._body_checksum);
+
+    // store time of send
+    _last_send = AP_HAL::millis();
 }
 
 /*
@@ -270,8 +293,6 @@ void AP_Mount_Lapis::read_incoming()
 {
     uint8_t incoming_byte;
     int16_t numc;
-
-    lapis_command_params cmd_prm;    
 
     numc = _port->available();
 
@@ -285,66 +306,75 @@ void AP_Mount_Lapis::read_incoming()
             case 0:
                 if (CMD_STARTING_BYTE == incoming_byte) {
                     _step = 1;
-                    cmd_prm._header_checksum = CMD_STARTING_BYTE; //reset checksum accumulator
-                    cmd_prm._body_checksum = 0; //reset checksum accumulator
+                    _incoming_cmd = {};
+                    _incoming_cmd._header_checksum = CMD_STARTING_BYTE; //reset checksum accumulator
+                    _incoming_cmd._body_checksum = 0; //reset checksum accumulator
                 }
                 break;
 
             case 1: // command ID
                 if(CMD_FROM_GIMBAL_INFO == incoming_byte || CMD_FROM_GIMBAL_VERSION == incoming_byte)
                 {
-                    cmd_prm._header_checksum = incoming_byte;
-                    cmd_prm._command_id = incoming_byte;
+                    _incoming_cmd._header_checksum = incoming_byte;
+                    _incoming_cmd._command_id = incoming_byte;
                     _step++;
                 }
                 else //unknown command id
                 {                    
                     _step = 0;
-                    cmd_prm._header_checksum = 0;
+                    _incoming_cmd._header_checksum = 0;
                 }
                 break;
 
             case 2: // Size of the body of the message
-                cmd_prm._header_checksum += incoming_byte;
-                cmd_prm._payload_length = incoming_byte;
-                _step++;
+                {
+                    _incoming_cmd._header_checksum += incoming_byte;
+                    _incoming_cmd._payload_length = incoming_byte;
+                    _step++;
+                }
                 break;
 
             case 3:	// checksum of the header
-                if (get_2s_compliment(cmd_prm._header_checksum) != incoming_byte) {
-                    _step = 0;
-                    cmd_prm._header_checksum = 0;
-                    // checksum error
-                    break;
+                {
+                    if (get_2s_compliment(_incoming_cmd._header_checksum) != incoming_byte) {
+                        _step = 0;
+                        _incoming_cmd._header_checksum = 0;
+                        // checksum error
+                        break;
+                    }
+                    _step++;
+                    _payload_counter = 0;   // prepare to receive payload
                 }
-                _step++;
-                _payload_counter = 0;   // prepare to receive payload
                 break;
 
             case 4: // parsing body
-                cmd_prm._body_checksum += incoming_byte;
+                {
+                    _incoming_cmd._body_checksum += incoming_byte;
 
-                uint32_t _expected_payload_size = 0;
-                if(cmd_prm._command_id == CMD_FROM_GIMBAL_INFO) _expected_payload_size = sizeof(lapis_gimbal_info);
-                if(cmd_prm._command_id == CMD_FROM_GIMBAL_VERSION) _expected_payload_size = sizeof(lapis_gimbal_version);
+                    uint32_t _expected_payload_size = 0;
+                    if(_incoming_cmd._command_id == CMD_FROM_GIMBAL_INFO) _expected_payload_size = sizeof(lapis_gimbal_info);
+                    if(_incoming_cmd._command_id == CMD_FROM_GIMBAL_VERSION) _expected_payload_size = sizeof(lapis_gimbal_version);
 
-                if (_payload_counter < _expected_payload_size) {
-                    gimbal_response[_payload_counter] = incoming_byte;
+                    if (_payload_counter < _expected_payload_size) {
+                        gimbal_response[_payload_counter] = incoming_byte;
+                    }
+
+                    if (++_payload_counter == _incoming_cmd._payload_length) {
+                        _step++;
+                    }
                 }
-
-                if (++_payload_counter == cmd_prm._payload_length) {
-                    _step++;
-                }
-
                 break;
 
             case 5: // body checksum
-                _step = 0;
-                if (get_2s_compliment(cmd_prm._body_checksum) != incoming_byte) {
-                    // checksum error
-                    break;
+                {
+                    _step = 0;
+                    if (get_2s_compliment(_incoming_cmd._body_checksum) != incoming_byte) {
+                        // checksum error
+                        break;
+                    }
+                    parse_body(_incoming_cmd._command_id);
                 }
-                parse_body(cmd_prm._command_id);
+                break;
         }
     }
 }

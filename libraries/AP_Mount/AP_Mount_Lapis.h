@@ -19,8 +19,10 @@
 #define CMD_FROM_GIMBAL_INFO            0xA2 // Frequency: 6 Hz
 #define CMD_FROM_GIMBAL_VERSION         0xA3 // Frequency: 1 Hz
 
-#define AP_MOUNT_LAPIS_RESEND_MS        1000 // resend angle targets to gimbal once per second
 #define CMD_STARTING_BYTE               0xBB
+
+#define AP_MOUNT_LAPIS_RESEND_MS        1000 // resend angle targets to gimbal once per second
+
 
 class AP_Mount_Lapis : public AP_Mount_Backend
 {
@@ -76,7 +78,7 @@ private:
 
     union float_byte {
         float f;
-        u_int8_t b[4];
+        uint8_t b[4];
     };
 
     // CMD_TO_GIMBAL_POWER
@@ -156,27 +158,25 @@ private:
     // Serial Protocol Variables
     struct PACKED lapis_command_params {
         uint8_t _starting_byte = CMD_STARTING_BYTE;
-        uint8_t _command_id;
-        uint8_t _payload_length;
-        uint8_t _header_checksum;
+        uint8_t _command_id = 0;
+        uint8_t _payload_length = 0;
+        uint8_t _header_checksum = 0;
 
-        uint8_t _body_checksum;
+        uint8_t _body_checksum = 0;
     };
 
+    lapis_command_params _incoming_cmd = {};
     uint8_t _step;              //used for parsing gimbal response
     uint8_t _payload_counter;   //used for parsing gimbal response
 
     // current uav and gimbal states
-    lapis_uav_info _current_uav_info;
-    lapis_gimbal_info _current_gimbal_info;
-    lapis_gimbal_version _current_gimbal_version;
+    lapis_uav_info _current_uav_info = {};
+    lapis_gimbal_info _current_gimbal_info = {};
+    lapis_gimbal_version _current_gimbal_version = {};
 
     AP_HAL::UARTDriver *_port;
 
     bool _initialised : 1;          // true once the driver has been initialised
-    uint32_t _last_send;            // system time of last do_mount_control sent to gimbal
+    uint32_t _last_send = 0;            // system time of last do_mount_control sent to gimbal
     bool send_uav_info_now = false; // send target angles to mount
-
-    uint8_t _reply_length;
-    uint8_t _reply_counter;
 };
