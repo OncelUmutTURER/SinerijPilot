@@ -47,13 +47,13 @@ void AP_Mount_Lapis::set_mode(enum MAV_MOUNT_MODE mode)
 void AP_Mount_Lapis::collect_uav_info(){
     _current_uav_info.command_type = 0;
 
-    float_byte _home_lat; _home_lat.f = _frontend._ahrs.get_home().lat / 10000000;
-    float_byte _home_lng; _home_lng.f = _frontend._ahrs.get_home().lng / 10000000;
-    float_byte _home_alt; _home_alt.f = _frontend._ahrs.get_home().alt / 100;
+    float_byte _home_lat; _home_lat.f = _frontend._ahrs.get_home().lat / 1E7;
+    float_byte _home_lng; _home_lng.f = _frontend._ahrs.get_home().lng / 1E7;
+    float_byte _home_alt; _home_alt.f = _frontend._ahrs.get_home().alt / 100.0f;
 
-    float_byte _uav_lat; _uav_lat.f = _frontend._current_loc.lat / 10000000;
-    float_byte _uav_lng; _uav_lng.f = _frontend._current_loc.lng / 10000000;
-    float_byte _uav_alt; _uav_alt.f = _frontend._current_loc.alt / 100;
+    float_byte _uav_lat; _uav_lat.f = _frontend._current_loc.lat / 1E7;
+    float_byte _uav_lng; _uav_lng.f = _frontend._current_loc.lng / 1E7;
+    float_byte _uav_alt; _uav_alt.f = _frontend._current_loc.alt / 100.0f;
     float_byte _uav_yaw; _uav_yaw.f = _frontend._ahrs.yaw;
 
     _current_uav_info.home_lat = _home_lat;
@@ -116,22 +116,34 @@ uint8_t AP_Mount_Lapis::calculate_angle_ef_target(){
 
         // point mount to a GPS point given by the mission planner
         case MAV_MOUNT_MODE_GPS_POINT:
-            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D) {
-                calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, false);
+            if(AP::gps().status() >= AP_GPS::GPS_OK_FIX_2D && 
+                   (_state._roi_target.lat != 0 && _state._roi_target.lng != 0 )) 
+            {
+                // Bu satırdaki hesaplama boşuna yapılıyor şu an. Sadece debug amaçlı.
+                // calc_angle_to_location(_state._roi_target, _angle_ef_target_rad, true, true, true);                
+                // //Vector3f target_deg = _angle_ef_target_rad * RAD_TO_DEG;
+                // //target_deg.z += 0;
 
-                float_byte _target_lat; _target_lat.f = _state._roi_target.lat / 10000000;
-                float_byte _target_lng; _target_lng.f = _state._roi_target.lng / 10000000;
-                float_byte _target_alt; _target_alt.f = _state._roi_target.alt / 100;
+                // Umut TODO:
+                // Eğer gimbal target konumundan hedefe bakmakta zorluk yaşıyorsa,
+                // _angle_ef_target_rad değeri CMD_TO_GIMBAL_ANGLE komutu olarak gönderilerek de
+                // gimbal'in ilgili konuma bakması sağlanabilir.
+
+                float_byte _target_lat; _target_lat.f = _state._roi_target.lat / 1E7;
+                float_byte _target_lng; _target_lng.f = _state._roi_target.lng / 1E7;
+                float_byte _target_alt; _target_alt.f = _state._roi_target.alt / 100.0f;
                 float_byte _target_dist; _target_dist.f = get_distance(_frontend._current_loc, _state._roi_target);
                 
                 _current_uav_info.target_lat = _target_lat;
                 _current_uav_info.target_lng = _target_lng;
                 _current_uav_info.target_alt = _target_alt;
                 _current_uav_info.target_dist = _target_dist;
-                _current_uav_info.command_type |= 1<<2; //target position set
-                
-                _command_id = CMD_TO_GIMBAL_UAV_INFO;
+                _current_uav_info.command_type |= 1<<2; //target position set                
             }
+            
+            // _command_id = CMD_TO_GIMBAL_ANGLE;
+            _command_id = CMD_TO_GIMBAL_UAV_INFO;
+            
             break;
 
         default:
@@ -210,9 +222,9 @@ void AP_Mount_Lapis::status_msg(mavlink_channel_t chan)
 
     mavlink_msg_mount_status_send(
                                     chan, 0, 0, 
-                                    _current_gimbal_info.gimbal_pitch.f*100, 
-                                    _current_gimbal_info.gimbal_roll.f*100, 
-                                    _current_gimbal_info.gimbal_yaw.f*100
+                                    _current_gimbal_info.gimbal_pitch.f*100.0f, 
+                                    _current_gimbal_info.gimbal_roll.f*100.0f, 
+                                    _current_gimbal_info.gimbal_yaw.f*100.0f
                                  );
 }
 
